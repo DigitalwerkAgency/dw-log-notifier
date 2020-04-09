@@ -6,7 +6,7 @@ Typo3 extension send message to slack channel or email, when typo3 catch error.
 
 
 ## Install
-Install extension via composer `composer req DigitalwerkAgency/dw-log-notifier` and activate it in Extension module
+Install extension via composer `composer req digitalwerk-agency/dw-log-notifier` and activate it in Extension module
 
 
 ## Setup
@@ -54,5 +54,5 @@ And to `public/typo3conf/LocalConfiguration.php` to `EXTENSIONS`:
 ```
 
 ## Configuration
-You can configure log_notifier extension in extensions settings.
+You can configure dw_log_notifier extension in extensions settings.
 
