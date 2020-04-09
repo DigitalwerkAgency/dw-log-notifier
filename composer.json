@@ -1,5 +1,5 @@
 {
-	"name": "samo-mihal/dw-log-notifier",
+	"name": "DigitalwerkAgency/dw-log-notifier",
 	"type": "typo3-cms-extension",
 	"description": "It sends message to slack channel or to user email when typo3 catch error.",
 	"version": "0.0.2",
@@ -8,7 +8,7 @@
 		"typo3/cms-core": "^8.7 || ^9.5"
 	},
 	"replace": {
-		"samo-mihal/log-notifier": "self.version"
+		"DigitalwerkAgency/log-notifier": "self.version"
 	},
 	"authors": [
 		{
