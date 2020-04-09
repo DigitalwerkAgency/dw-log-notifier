@@ -1,7 +1,7 @@
 
 
 
-# <img src="https://github.com/samo-mihal/dw-log-notifier/raw/master/Resources/Public/Icons/Extension.svg?sanitize=true" width="40" height="40"/> Log notifier
+# <img src="https://github.com/DigitalwerkAgency/dw-log-notifier/raw/master/Resources/Public/Icons/Extension.svg?sanitize=true" width="40" height="40"/> Log notifier
 Typo3 extension send message to slack channel or email, when typo3 catch error.
 
 
