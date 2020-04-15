@@ -4,6 +4,8 @@ namespace Digitalwerk\DwLogNotifier\Log\Processor;
 
 use Digitalwerk\DwLogNotifier\Log\AntiSpam\NotifierLogAntiSpam;
 use Maknz\Slack\Client;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
+use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Log\LogLevel;
 use TYPO3\CMS\Core\Log\LogRecord;
 use TYPO3\CMS\Core\Log\Processor\AbstractProcessor;
@@ -134,6 +136,29 @@ class NotifierLogProcessor extends AbstractProcessor
             return $view->render();
         } catch (\Exception $e) {
             return $e->getMessage();
+        }
+    }
+
+    /**
+     * Register log processor
+     */
+    public static function initialize()
+    {
+        if (isset($GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['dw_log_notifier']) && is_array($GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['dw_log_notifier'])) {
+            $dwLogNotifierConfiguration = GeneralUtility::makeInstance(ExtensionConfiguration::class)
+                ->get('dw_log_notifier');
+            if (isset($dwLogNotifierConfiguration['errorLogReporting'])
+                && $dwLogNotifierConfiguration['errorLogReporting']['enabled'] === '1'
+                && !in_array(Environment::getContext()->__toString(), explode(',', $dwLogNotifierConfiguration['errorLogReporting']['disabledTypo3Context']))
+            ) {
+                $GLOBALS['TYPO3_CONF_VARS']['LOG']['processorConfiguration'] = [
+                    \TYPO3\CMS\Core\Log\LogLevel::ERROR => [
+                        \Digitalwerk\DwLogNotifier\Log\Processor\NotifierLogProcessor::class => [
+                            'configuration' => $dwLogNotifierConfiguration['errorLogReporting'],
+                        ]
+                    ]
+                ];
+            }
         }
     }
 
