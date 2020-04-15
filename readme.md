@@ -15,20 +15,26 @@ After activating extension, write to `public/typo3conf/AdditionalConfiguration.p
 /**
  * Notify by mail when error is logged
  */
-$dwLogNotifierConfiguration = GeneralUtility::makeInstance(ExtensionConfiguration::class)
-    ->get('dw_log_notifier');
-if (isset($dwLogNotifierConfiguration['errorLogReporting'])
-    && $dwLogNotifierConfiguration['errorLogReporting']['enabled'] === '1'
-    && !in_array(Environment::getContext()->__toString(), explode(',', $dwLogNotifierConfiguration['errorLogReporting']['disabledTypo3Context']))
+if (GeneralUtility::makeInstance(
+    PackageManager::class,
+    GeneralUtility::makeInstance(DependencyOrderingService::class))
+    ->isPackageActive('dw_log_notifier')
 ) {
-    $GLOBALS['TYPO3_CONF_VARS']['LOG']['processorConfiguration'] = [
-        \TYPO3\CMS\Core\Log\LogLevel::ERROR => [
-            \Digitalwerk\DwLogNotifier\Log\Processor\NotifierLogProcessor::class => [
-                'configuration' => $dwLogNotifierConfiguration['errorLogReporting'],
+    $dwLogNotifierConfiguration = GeneralUtility::makeInstance(ExtensionConfiguration::class)
+        ->get('dw_log_notifier');
+    if (isset($dwLogNotifierConfiguration['errorLogReporting'])
+        && $dwLogNotifierConfiguration['errorLogReporting']['enabled'] === '1'
+        && !in_array(Environment::getContext()->__toString(), explode(',', $dwLogNotifierConfiguration['errorLogReporting']['disabledTypo3Context']))
+    ) {
+        $GLOBALS['TYPO3_CONF_VARS']['LOG']['processorConfiguration'] = [
+            \TYPO3\CMS\Core\Log\LogLevel::ERROR => [
+                \Digitalwerk\DwLogNotifier\Log\Processor\NotifierLogProcessor::class => [
+                    'configuration' => $dwLogNotifierConfiguration['errorLogReporting'],
+                ]
             ]
-        ]
-    ];
+        ];
 
+    }
 }
 ```
 
