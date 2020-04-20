@@ -55,6 +55,18 @@ class NotifierLogProcessor extends AbstractProcessor
             $notifierLogAntiSpam->writeErrorToJson();
 
             if (LogLevel::isValidLevel($logRecord->getLevel())) {
+                if ($this->configuration['email']['addresses']) {
+                    $mailMessage = new MailMessage();
+                    $mailMessage
+                        ->setSubject($this->getSubject($logRecord))
+                        ->setTo(MailUtility::parseAddresses($this->configuration['email']['addresses']))
+                        ->setSender(MailUtility::getSystemFrom())
+                        ->setContentType('text/html')
+                        ->setBody($this->getBody($logRecord));
+                    $mailer = new Mailer();
+                    $mailer->send($mailMessage);
+                }
+
                 if ($this->configuration['slack'] && $this->configuration['slack']['webHookUrl']) {
                     $slackClient = new Client($this->configuration['slack']['webHookUrl'], [
                         'username' => $this->configuration['slack']['username'] ?: 'Typo3 notification bot',
@@ -83,18 +95,6 @@ class NotifierLogProcessor extends AbstractProcessor
                             'ts' => $logRecord->getCreated()
                         ])
                         ->send();
-                }
-
-                if ($this->configuration['email']['addresses']) {
-                    $mailMessage = new MailMessage();
-                    $mailMessage
-                        ->setSubject($this->getSubject($logRecord))
-                        ->setTo(MailUtility::parseAddresses($this->configuration['email']['addresses']))
-                        ->setSender(MailUtility::getSystemFrom())
-                        ->setContentType('text/html')
-                        ->setBody($this->getBody($logRecord));
-                    $mailer = new Mailer();
-                    $mailer->send($mailMessage);
                 }
             }
         }
