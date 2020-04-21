@@ -67,34 +67,46 @@ class NotifierLogProcessor extends AbstractProcessor
                     $mailer->send($mailMessage);
                 }
 
-                if ($this->configuration['slack'] && $this->configuration['slack']['webHookUrl']) {
-                    $slackClient = new Client($this->configuration['slack']['webHookUrl'], [
-                        'username' => $this->configuration['slack']['username'] ?: 'Typo3 notification bot',
-                        'channel' => $this->configuration['slack']['channel'],
-                        'link_names' => true,
-                    ]);
+                try {
+                    if ($this->configuration['slack'] && $this->configuration['slack']['webHookUrl']) {
+                        $slackClient = new Client($this->configuration['slack']['webHookUrl'], [
+                            'username' => $this->configuration['slack']['username'] ?: 'Typo3 notification bot',
+                            'channel' => $this->configuration['slack']['channel'],
+                            'link_names' => true,
+                        ]);
 
-                    $slackClient
-                        ->attach([
-                            'title' => $this->getSubject($logRecord),
-                            'title_link' => $GLOBALS['TYPO3_REQUEST'] ? (string)$GLOBALS['TYPO3_REQUEST']->getUri() : '',
-                            'text'     => $logRecord->getMessage(),
-                            'color'    => 'danger',
-                            'fields' => [
-                                [
-                                    'title' => 'Level',
-                                    'value' => LogLevel::getName($logRecord->getLevel()),
-                                    'short' => true,
+                        $slackClient
+                            ->attach([
+                                'title' => $this->getSubject($logRecord),
+                                'title_link' => $GLOBALS['TYPO3_REQUEST'] ? (string)$GLOBALS['TYPO3_REQUEST']->getUri() : '',
+                                'text'     => $logRecord->getMessage(),
+                                'color'    => 'danger',
+                                'fields' => [
+                                    [
+                                        'title' => 'Level',
+                                        'value' => LogLevel::getName($logRecord->getLevel()),
+                                        'short' => true,
+                                    ],
+                                    [
+                                        'title' => 'Link',
+                                        'value' => $GLOBALS['TYPO3_REQUEST'] ? (string)$GLOBALS['TYPO3_REQUEST']->getUri() : '',
+                                        'short' => true,
+                                    ],
                                 ],
-                                [
-                                    'title' => 'Link',
-                                    'value' => $GLOBALS['TYPO3_REQUEST'] ? (string)$GLOBALS['TYPO3_REQUEST']->getUri() : '',
-                                    'short' => true,
-                                ],
-                            ],
-                            'ts' => $logRecord->getCreated()
-                        ])
-                        ->send();
+                                'ts' => $logRecord->getCreated()
+                            ])
+                            ->send();
+                    }
+                } catch (\Exception $e) {
+                    $mailMessage = new MailMessage();
+                    $mailMessage
+                        ->setSubject('Log notifier - slack error')
+                        ->setTo(MailUtility::parseAddresses($this->configuration['email']['addresses']))
+                        ->setSender(MailUtility::getSystemFrom())
+                        ->setContentType('text/html')
+                        ->setBody($e->getMessage());
+                    $mailer = new Mailer();
+                    $mailer->send($mailMessage);
                 }
             }
         }
