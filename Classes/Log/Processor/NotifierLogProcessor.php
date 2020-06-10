@@ -4,8 +4,6 @@ namespace Digitalwerk\DwLogNotifier\Log\Processor;
 
 use Digitalwerk\DwLogNotifier\Log\AntiSpam\NotifierLogAntiSpam;
 use Maknz\Slack\Client;
-use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
-use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Log\LogLevel;
 use TYPO3\CMS\Core\Log\LogRecord;
 use TYPO3\CMS\Core\Log\Processor\AbstractProcessor;
@@ -13,6 +11,7 @@ use TYPO3\CMS\Core\Mail\Mailer;
 use TYPO3\CMS\Core\Mail\MailMessage;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\MailUtility;
+use TYPO3\CMS\Core\Utility\StringUtility;
 use TYPO3\CMS\Extbase\Utility\DebuggerUtility;
 use TYPO3\CMS\Fluid\View\StandaloneView;
 
@@ -22,7 +21,6 @@ use TYPO3\CMS\Fluid\View\StandaloneView;
  */
 class NotifierLogProcessor extends AbstractProcessor
 {
-
     /**
      * Processor configurations
      * @var array
@@ -46,6 +44,10 @@ class NotifierLogProcessor extends AbstractProcessor
                 return $logRecord;
             }
         }
+        $keyPostfix = '';
+        if (StringUtility::beginsWith(TYPO3_branch, '8')) {
+            $keyPostfix = '.';
+        }
 
         $notifierLogAntiSpam = GeneralUtility::makeInstance(NotifierLogAntiSpam::class);
         $notifierLogAntiSpam->setMessage($logRecord->getMessage());
@@ -55,11 +57,11 @@ class NotifierLogProcessor extends AbstractProcessor
             $notifierLogAntiSpam->writeErrorToJson();
 
             if (LogLevel::isValidLevel($logRecord->getLevel())) {
-                if ($this->configuration['email']['addresses']) {
+                if ($this->configuration['email'.$keyPostfix]['addresses']) {
                     $mailMessage = new MailMessage();
                     $mailMessage
                         ->setSubject($this->getSubject($logRecord))
-                        ->setTo(MailUtility::parseAddresses($this->configuration['email']['addresses']))
+                        ->setTo(MailUtility::parseAddresses($this->configuration['email'.$keyPostfix]['addresses']))
                         ->setSender(MailUtility::getSystemFrom())
                         ->setContentType('text/html')
                         ->setBody($this->getBody($logRecord));
@@ -68,10 +70,10 @@ class NotifierLogProcessor extends AbstractProcessor
                 }
 
                 try {
-                    if ($this->configuration['slack'] && $this->configuration['slack']['webHookUrl']) {
-                        $slackClient = new Client($this->configuration['slack']['webHookUrl'], [
-                            'username' => $this->configuration['slack']['username'] ?: 'Typo3 notification bot',
-                            'channel' => $this->configuration['slack']['channel'],
+                    if ($this->configuration['slack'] && $this->configuration['slack'.$keyPostfix]['webHookUrl']) {
+                        $slackClient = new Client($this->configuration['slack'.$keyPostfix]['webHookUrl'], [
+                            'username' => $this->configuration['slack'.$keyPostfix]['username'] ?: 'Typo3 notification bot',
+                            'channel' => $this->configuration['slack'.$keyPostfix]['channel'],
                             'link_names' => true,
                         ]);
 
@@ -101,7 +103,7 @@ class NotifierLogProcessor extends AbstractProcessor
                     $mailMessage = new MailMessage();
                     $mailMessage
                         ->setSubject('Log notifier - slack error')
-                        ->setTo(MailUtility::parseAddresses($this->configuration['email']['addresses']))
+                        ->setTo(MailUtility::parseAddresses($this->configuration['email'.$keyPostfix]['addresses']))
                         ->setSender(MailUtility::getSystemFrom())
                         ->setContentType('text/html')
                         ->setBody($e->getMessage());
@@ -156,21 +158,37 @@ class NotifierLogProcessor extends AbstractProcessor
      */
     public static function initialize()
     {
-        if (isset($GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['dw_log_notifier']) && is_array($GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['dw_log_notifier'])) {
-            $dwLogNotifierConfiguration = GeneralUtility::makeInstance(ExtensionConfiguration::class)
-                ->get('dw_log_notifier');
-            if (isset($dwLogNotifierConfiguration['errorLogReporting'])
-                && $dwLogNotifierConfiguration['errorLogReporting']['enabled'] === '1'
-                && !in_array(Environment::getContext()->__toString(), explode(',', $dwLogNotifierConfiguration['errorLogReporting']['disabledTypo3Context']))
-            ) {
-                $GLOBALS['TYPO3_CONF_VARS']['LOG']['processorConfiguration'] = [
-                    \TYPO3\CMS\Core\Log\LogLevel::ERROR => [
-                        \Digitalwerk\DwLogNotifier\Log\Processor\NotifierLogProcessor::class => [
-                            'configuration' => $dwLogNotifierConfiguration['errorLogReporting'],
-                        ]
-                    ]
-                ];
+        if (StringUtility::beginsWith(TYPO3_branch, '8')) {
+            $dwLogNotifierConfiguration = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['dw_log_notifier']);
+            $typo3Context = (string)GeneralUtility::getApplicationContext();
+            self::setProcessor($dwLogNotifierConfiguration, $typo3Context, 'errorLogReporting.');
+        } else {
+            if (isset($GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['dw_log_notifier']) && is_array($GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['dw_log_notifier'])) {
+                $dwLogNotifierConfiguration = GeneralUtility::makeInstance(\TYPO3\CMS\Core\Configuration\ExtensionConfiguration::class)->get('dw_log_notifier');
+                $typo3Context = \TYPO3\CMS\Core\Core\Environment::getContext()->__toString();
+                self::setProcessor($dwLogNotifierConfiguration, $typo3Context, 'errorLogReporting');
             }
+        }
+    }
+
+    /**
+     * @param $dwLogNotifierConfiguration
+     * @param $typo3Context
+     * @param $key
+     */
+    private static function setProcessor($dwLogNotifierConfiguration, $typo3Context, $key) {
+        if ($dwLogNotifierConfiguration
+            && isset($dwLogNotifierConfiguration[$key])
+            && $dwLogNotifierConfiguration[$key]['enabled'] === '1'
+            && !in_array($typo3Context, explode(',', $dwLogNotifierConfiguration[$key]['disabledTypo3Context']))
+        ) {
+            $GLOBALS['TYPO3_CONF_VARS']['LOG']['processorConfiguration'] = [
+                \TYPO3\CMS\Core\Log\LogLevel::ERROR => [
+                    \Digitalwerk\DwLogNotifier\Log\Processor\NotifierLogProcessor::class => [
+                        'configuration' => $dwLogNotifierConfiguration[$key],
+                    ]
+                ]
+            ];
         }
     }
 
