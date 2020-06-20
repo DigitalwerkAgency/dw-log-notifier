@@ -2,6 +2,8 @@
 declare(strict_types=1);
 namespace Digitalwerk\DwLogNotifier\Log\Processor;
 
+use Digitalwerk\DwLogNotifier\Error\DebugExceptionHandler;
+use Digitalwerk\DwLogNotifier\Error\ProductionExceptionHandler;
 use Digitalwerk\DwLogNotifier\Log\AntiSpam\NotifierLogAntiSpam;
 use Maknz\Slack\Client;
 use TYPO3\CMS\Core\Log\LogLevel;
@@ -159,6 +161,8 @@ class NotifierLogProcessor extends AbstractProcessor
     public static function initialize()
     {
         if (StringUtility::beginsWith(TYPO3_branch, '8')) {
+            $GLOBALS['TYPO3_CONF_VARS']['SYS']['debugExceptionHandler'] = DebugExceptionHandler::class;
+            $GLOBALS['TYPO3_CONF_VARS']['SYS']['productionExceptionHandler'] = ProductionExceptionHandler::class;
             $dwLogNotifierConfiguration = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['dw_log_notifier']);
             $typo3Context = (string)GeneralUtility::getApplicationContext();
             self::setProcessor($dwLogNotifierConfiguration, $typo3Context, 'errorLogReporting.');
