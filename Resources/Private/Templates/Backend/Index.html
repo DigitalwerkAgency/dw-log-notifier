@@ -1,0 +1,132 @@
+{namespace be = TYPO3\CMS\Backend\ViewHelpers}
+{namespace bu = TYPO3\CMS\Beuser\ViewHelpers}
+{namespace core = TYPO3\CMS\Core\ViewHelpers}
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en"
+      xmlns:f="http://typo3.org/ns/TYPO3/Fluid/ViewHelpers"
+      xmlns:be="http://typo3.org/ns/TYPO3/Fluid/ViewHelpers"
+      xmlns:v="http://typo3.org/ns/FluidTYPO3/Vhs/ViewHelpers"
+      data-namespace-typo3-fluid="true">
+
+<f:layout name="Default" />
+
+<f:section name="Main">
+  <h1 class="text-center" style="margin-top:0;">
+    Digitalwerk Log Notifier
+    <br/>
+    <f:image src="EXT:dw_log_notifier/Resources/Public/Icons/Extension.svg" width="30" height="30" style="vertical-align: middle; margin-right: 15px;"/>
+  </h1>
+
+  <div class="container">
+    <f:form action="status" arguments="{main:main}">
+      <div class="panel {f:if(condition: '{main.enable} == 1', then: 'panel-success', else: 'panel-danger')}" style="box-shadow: none;">
+        <div class="panel-body">
+          <f:if condition="{main.enable} == 1">
+            <f:then>
+              <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>Status:
+              <strong class="text-success pull-right">
+                Enabled
+                <f:form.button class="text-danger">Disable</f:form.button>
+              </strong>
+            </f:then>
+            <f:else>
+              <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>Status:
+              <strong class="text-danger pull-right">
+                Disabled
+                <f:form.button class="text-success">Enable</f:form.button>
+              </strong>
+            </f:else>
+          </f:if>
+          <f:if condition="!{main.emails} && !{main.slackWebHookUrl} && !{main.slackUsername} && !{main.slackChannel} && {main.enable}">
+            <div class="row">
+              <div class="col-md-12">
+                <strong class="text-danger pull-right" style="margin-top: 5px">
+                  Email or slack info should not be empty.
+                </strong>
+              </div>
+            </div>
+          </f:if>
+        </div>
+      </div>
+    </f:form>
+    <f:if condition="{main.enable}">
+      <f:render section="Panel"
+                arguments="{main:main,name:'Omit exceptions:',propertyValue:main.omitExceptions,propertyName:'omitExceptions'}"/>
+      <f:render section="Panel"
+                arguments="{main:main,name:'Email addresses:',propertyValue:main.emails,propertyName:'emails'}"/>
+      <div class="panel panel-info" style="box-shadow: none;">
+        <div class="panel-body">
+          <span class="glyphicon glyphicon-scale" aria-hidden="true"></span>
+          Slack info:
+          <f:form object="{main}" objectName="main" action="update" arguments="{main:main}">
+            <div class="row">
+              <div class="col-md-12">
+                <strong class="text-info pull-right">
+                  Slack WebHookUrl :
+                  <f:form.textfield type="input" style="margin: 5px" property="slackWebHookUrl" />
+                </strong>
+              </div>
+              <div class="col-md-12">
+                <strong class="text-info pull-right">
+                  Slack Channel :
+                  <f:form.textfield type="input" style="margin: 5px" property="slackChannel" />
+                </strong>
+              </div>
+              <div class="col-md-12">
+                <strong class="text-info pull-right">
+                  Slack Username :
+                  <f:form.textfield type="input" style="margin: 5px" property="slackUsername" />
+                </strong>
+              </div>
+            </div>
+            <div class="row" style="margin-top: 5px">
+              <div class="col-md-12">
+                <strong class="text-info pull-right">
+                  <f:form.button class="text-success">Update</f:form.button>
+                </strong>
+              </div>
+            </div>
+          </f:form>
+        </div>
+      </div>
+      <f:render section="Panel"
+                arguments="{main:main,name:'Disabled Typo3 Context:',propertyValue:main.disabledTypo3Context,propertyName:'disabledTypo3Context'}"/>
+    </f:if>
+  </div>
+
+</f:section>
+
+<f:section name="Panel">
+  <div class="panel panel-info" style="box-shadow: none;">
+    <div class="panel-body">
+      <span class="glyphicon glyphicon-scale" aria-hidden="true"></span>
+      {name}
+      <f:if condition="{propertyValue}">
+        <f:variable name="propertyArray" value="{v:iterator.explode(content: propertyValue, glue: ',')}"/>
+        <f:for each="{propertyArray}" as="propertyArrayItem" iteration="iterator">
+          <div class="row" style="margin: 5px">
+            <div class="col-md-12">
+              <f:form action="delete{propertyName -> f:format.case(mode: 'capital')}Item" arguments="{main:main,id:iterator.index}">
+                <strong class="text-info pull-right">
+                  {propertyArrayItem}
+                  <f:form.button class="text-danger">Delete</f:form.button>
+                </strong>
+              </f:form>
+            </div>
+          </div>
+        </f:for>
+      </f:if>
+      <div class="row">
+        <div class="col-md-12">
+          <f:form object="{main}" objectName="main" action="update" arguments="{main:main}">
+            <strong class="text-info pull-right">
+              <f:form.textfield type="input" required="true" property="{propertyName}" value="" />
+              <f:form.button class="text-success">Add</f:form.button>
+            </strong>
+          </f:form>
+        </div>
+      </div>
+    </div>
+  </div>
+</f:section>
+
+</html>

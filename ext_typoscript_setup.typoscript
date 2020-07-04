@@ -1,0 +1,21 @@
+
+config.tx_extbase {
+  persistence {
+    classes {
+      Digitalwerk\DwLogNotifier\Domain\Model\Main {
+        mapping {
+          tableName = tx_dwlognotifier_domain_model_main
+          columns {
+            enable.mapOnProperty = enable
+            omit_exceptions.mapOnProperty = omitExceptions
+            emails.mapOnProperty = emails
+            slack_channel.mapOnProperty = slackChannel
+            slack_username.mapOnProperty = slackUsername
+            slack_web_hook_url.mapOnProperty = slackWebHookUrl
+            disabled_typo3_context.mapOnProperty = disabledTypo3Context
+          }
+        }
+      }
+    }
+  }
+}

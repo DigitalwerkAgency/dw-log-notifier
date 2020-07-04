@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<xliff version="1.0">
+    <file source-language="en" datatype="plaintext" original="messages" date="2012-02-29T20:53:46Z" product-name="dw_tinypng">
+        <header/>
+        <body>
+            <trans-unit id="mlang_tabs_tab">
+                <source>Log notifier</source>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>
