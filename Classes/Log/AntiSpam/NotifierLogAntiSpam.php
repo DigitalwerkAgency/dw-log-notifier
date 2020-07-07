@@ -58,7 +58,7 @@ class NotifierLogAntiSpam
      */
     public function getJsonContent()
     {
-        $content = file_get_contents($this->getJsonFilePath());
+        $content = $this->getJsonFilePath() ? file_get_contents($this->getJsonFilePath()) : '';
         if ($content) {
             return json_decode($content, true);
         }
@@ -110,10 +110,12 @@ class NotifierLogAntiSpam
         }
 
         $jsonContent[$this->getError()] = time() + $this->validMessageTime * 60 * 60;
-        file_put_contents(
-            $this->getJsonFilePath(),
-            json_encode($jsonContent, JSON_PRETTY_PRINT)
-        );
+        if ($this->getJsonFilePath()) {
+            file_put_contents(
+                $this->getJsonFilePath(),
+                json_encode($jsonContent, JSON_PRETTY_PRINT)
+            );
+        }
     }
 
     /**
@@ -121,7 +123,7 @@ class NotifierLogAntiSpam
      */
     public function autoCleanUpJson()
     {
-        if (filesize($this->getJsonFilePath()) >= $this->maxJsonFileBytes) {
+        if ($this->getJsonFilePath() && (filesize($this->getJsonFilePath()) >= $this->maxJsonFileBytes)) {
             file_put_contents(
                 $this->getJsonFilePath(),
                 json_encode([], JSON_PRETTY_PRINT)
