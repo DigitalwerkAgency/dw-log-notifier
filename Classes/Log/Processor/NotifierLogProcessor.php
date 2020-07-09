@@ -176,6 +176,8 @@ class NotifierLogProcessor extends AbstractProcessor
                 'request' => $GLOBALS['TYPO3_REQUEST'],
                 'time' => \date(\DATE_RFC1036, (int)$logRecord->getCreated()),
                 'logRecord' => $logRecord,
+                'GET' => $_GET,
+                'POST' => $_POST,
             ]);
             return $view->render();
         } catch (\Exception $e) {
