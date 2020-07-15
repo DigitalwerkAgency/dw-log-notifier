@@ -14,34 +14,33 @@
   </h1>
 
   <div class="container">
-      <div class="panel {f:if(condition: '{enable} == 1', then: 'panel-success', else: 'panel-danger')}" style="box-shadow: none;">
-        <div class="panel-body">
-          <f:if condition="{enable} == 1">
-            <f:then>
-              <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>Status:
-              <strong class="text-success pull-right">
-                Enabled
+    <div class="panel {f:if(condition: '{enable} == 1', then: 'panel-success', else: 'panel-danger')}" style="box-shadow: none;">
+      <div class="panel-body">
+        <f:if condition="{enable} == 1">
+          <f:then>
+            <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>Status:
+            <strong class="text-success pull-right">
+              Enabled
+            </strong>
+          </f:then>
+          <f:else>
+            <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>Status:
+            <strong class="text-danger pull-right">
+              Disabled
+            </strong>
+          </f:else>
+        </f:if>
+        <f:if condition="!{emails} && !{slack.webHookUrl} && !{slack.username} && !{slack.channel} && {enable}">
+          <div class="row">
+            <div class="col-md-12">
+              <strong class="text-danger pull-right" style="margin-top: 5px">
+                Email or slack info should not be empty.
               </strong>
-            </f:then>
-            <f:else>
-              <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>Status:
-              <strong class="text-danger pull-right">
-                Disabled
-              </strong>
-            </f:else>
-          </f:if>
-          <f:if condition="!{emails} && !{slack.webHookUrl} && !{slack.username} && !{slack.channel} && {enable}">
-            <div class="row">
-              <div class="col-md-12">
-                <strong class="text-danger pull-right" style="margin-top: 5px">
-                  Email or slack info should not be empty.
-                </strong>
-              </div>
             </div>
-          </f:if>
-        </div>
+          </div>
+        </f:if>
       </div>
-    </f:form>
+    </div>
     <f:if condition="{enable}">
       <f:render section="Panel"
                 arguments="{name:'Omit exceptions:',propertyValue:omitExceptions}"/>
@@ -51,19 +50,19 @@
         <div class="panel-body">
           <span class="glyphicon glyphicon-scale" aria-hidden="true"></span>
           Slack info:
-            <div class="row">
+            <div class="row text-center">
               <div class="col-md-12">
-                <strong class="text-info pull-right">
+                <strong class="text-{f:if(condition: slack.webHookUrl, then: 'info', else: 'danger')}">
                   Slack WebHookUrl : {slack.webHookUrl}
                 </strong>
               </div>
               <div class="col-md-12">
-                <strong class="text-info pull-right">
+                <strong class="text-{f:if(condition: slack.channel, then: 'info', else: 'danger')}">
                   Slack Channel : {slack.channel}
                 </strong>
               </div>
               <div class="col-md-12">
-                <strong class="text-info pull-right">
+                <strong class="text-{f:if(condition: slack.username, then: 'info', else: 'danger')}">
                   Slack Username : {slack.username}
                 </strong>
               </div>
@@ -85,9 +84,9 @@
       <f:if condition="{propertyValue}">
         <f:variable name="propertyArray" value="{v:iterator.explode(content: propertyValue, glue: ',')}"/>
         <f:for each="{propertyArray}" as="propertyArrayItem" iteration="iterator">
-          <div class="row" style="margin: 5px">
+          <div class="row text-center" style="margin: 5px">
             <div class="col-md-12">
-              <strong class="text-info pull-right">
+              <strong class="text-info">
                 {propertyArrayItem}
               </strong>
             </div>
