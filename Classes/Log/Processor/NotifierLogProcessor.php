@@ -159,6 +159,7 @@ class NotifierLogProcessor extends AbstractProcessor
                 'logRecord' => $logRecord,
                 'GET' => $_GET,
                 'POST' => $_POST,
+                'SERVER' => $_SERVER
             ]);
             return $view->render();
         } catch (\Exception $e) {
