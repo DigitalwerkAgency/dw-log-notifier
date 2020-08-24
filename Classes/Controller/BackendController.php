@@ -47,6 +47,7 @@ class BackendController extends ActionController
 	{
 	    $keyPostFix = '';
         if (StringUtility::beginsWith(TYPO3_branch, '8')) {
+            // @extensionScannerIgnoreLine
             $dwLogNotifierConfiguration = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['dw_log_notifier']);
             $keyPostFix = '.';
         } else {
