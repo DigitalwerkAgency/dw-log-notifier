@@ -62,15 +62,19 @@ class NotifierLogProcessor extends AbstractProcessor
 
             if (LogLevel::isValidLevel($logRecord->getLevel())) {
                 if ($this->configuration['email' . $this->keyPostFix]['addresses']) {
-                    $mailMessage = new MailMessage();
-                    $mailMessage
-                        ->setSubject($this->getSubject($logRecord))
-                        ->setTo(MailUtility::parseAddresses($this->configuration['email' . $this->keyPostFix]['addresses']))
-                        ->setSender(MailUtility::getSystemFrom())
-                        ->setContentType('text/html')
-                        ->setBody($this->getBody($logRecord));
-                    $mailer = new Mailer();
-                    $mailer->send($mailMessage);
+                    try {
+                        $mailMessage = new MailMessage();
+                        $mailMessage
+                            ->setSubject($this->getSubject($logRecord))
+                            ->setTo(MailUtility::parseAddresses($this->configuration['email' . $this->keyPostFix]['addresses']))
+                            ->setSender(MailUtility::getSystemFrom())
+                            ->setContentType('text/html')
+                            ->setBody($this->getBody($logRecord));
+                        $mailer = new Mailer();
+                        $mailer->send($mailMessage);
+                    } catch (\Exception $exception) {
+
+                    }
                 }
 
                 try {
@@ -111,15 +115,19 @@ class NotifierLogProcessor extends AbstractProcessor
                             ->send();
                     }
                 } catch (\Exception $e) {
-                    $mailMessage = new MailMessage();
-                    $mailMessage
-                        ->setSubject('Log notifier - slack error')
-                        ->setTo(MailUtility::parseAddresses($this->configuration['email' . $this->keyPostFix]['addresses']))
-                        ->setSender(MailUtility::getSystemFrom())
-                        ->setContentType('text/html')
-                        ->setBody($e->getMessage());
-                    $mailer = new Mailer();
-                    $mailer->send($mailMessage);
+                    try {
+                        $mailMessage = new MailMessage();
+                        $mailMessage
+                            ->setSubject('Log notifier - slack error')
+                            ->setTo(MailUtility::parseAddresses($this->configuration['email' . $this->keyPostFix]['addresses']))
+                            ->setSender(MailUtility::getSystemFrom())
+                            ->setContentType('text/html')
+                            ->setBody($e->getMessage());
+                        $mailer = new Mailer();
+                        $mailer->send($mailMessage);
+                    } catch (\Exception $exception) {
+
+                    }
                 }
             }
         }
