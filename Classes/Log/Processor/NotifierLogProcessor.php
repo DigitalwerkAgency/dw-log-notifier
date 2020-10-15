@@ -183,6 +183,7 @@ class NotifierLogProcessor extends AbstractProcessor
         if (StringUtility::beginsWith(TYPO3_branch, '8')) {
             $GLOBALS['TYPO3_CONF_VARS']['SYS']['debugExceptionHandler'] = DebugExceptionHandler::class;
             $GLOBALS['TYPO3_CONF_VARS']['SYS']['productionExceptionHandler'] = ProductionExceptionHandler::class;
+            // @extensionScannerIgnoreLine
             $dwLogNotifierConfiguration = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['dw_log_notifier']);
             $typo3Context = (string)GeneralUtility::getApplicationContext();
             self::setProcessor($dwLogNotifierConfiguration, $typo3Context, '.');
