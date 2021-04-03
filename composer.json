@@ -2,10 +2,10 @@
 	"name": "digitalwerk-agency/dw-log-notifier",
 	"type": "typo3-cms-extension",
 	"description": "It sends message to slack channel or to user email when typo3 catch error.",
-	"version": "0.0.19",
+	"version": "0.0.20",
 	"license": "GPL-2.0+",
 	"require": {
-		"typo3/cms-core": "^8.7 || ^9.5",
+		"typo3/cms-core": "^8.7 || ^9.5 || ^10",
 		"maknz/slack": "^1.7"
 	},
 	"replace": {
@@ -23,6 +23,11 @@
             "homepage": "https://digitalwerk.agency/"
         }
 	],
+	"extra": {
+		"typo3/cms": {
+			"extension-key": "dw_log_notifier"
+		}
+	},
     "autoload": {
         "psr-4": {
             "Digitalwerk\\DwLogNotifier\\": "Classes"

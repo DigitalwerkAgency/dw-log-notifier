@@ -25,4 +25,4 @@ call_user_func(function ($extKey) {
             ]
         );
     }
-}, $_EXTKEY);
+}, 'dw_log_notifier');
