@@ -2,8 +2,6 @@
 declare(strict_types=1);
 namespace Digitalwerk\DwLogNotifier\Log\Processor;
 
-use Digitalwerk\DwLogNotifier\Error\DebugExceptionHandler;
-use Digitalwerk\DwLogNotifier\Error\ProductionExceptionHandler;
 use Digitalwerk\DwLogNotifier\Log\AntiSpam\NotifierLogAntiSpam;
 use Maknz\Slack\Client;
 use TYPO3\CMS\Core\Log\LogLevel;
@@ -13,7 +11,6 @@ use TYPO3\CMS\Core\Mail\Mailer;
 use TYPO3\CMS\Core\Mail\MailMessage;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\MailUtility;
-use TYPO3\CMS\Core\Utility\StringUtility;
 use TYPO3\CMS\Extbase\Utility\DebuggerUtility;
 use TYPO3\CMS\Fluid\View\StandaloneView;
 
@@ -30,17 +27,11 @@ class NotifierLogProcessor extends AbstractProcessor
     protected $configuration = [];
 
     /**
-     * @var string
-     * Empty string, in Typo3 v8 "dot"
-     */
-    protected $keyPostFix = '';
-
-    /**
      * Processes a log record and adds additional data.
      *
      * @param \TYPO3\CMS\Core\Log\LogRecord $logRecord The log record to process
      * @return \TYPO3\CMS\Core\Log\LogRecord The processed log record with additional data
-     * @throws \TYPO3\CMS\Core\Exception
+     * @throws \TYPO3\CMS\Core\Exception|\Symfony\Component\Mailer\Exception\TransportExceptionInterface
      */
     public function processLogRecord(\TYPO3\CMS\Core\Log\LogRecord $logRecord)
     {
@@ -60,38 +51,35 @@ class NotifierLogProcessor extends AbstractProcessor
             $notifierLogAntiSpam->autoCleanUpJson();
             $notifierLogAntiSpam->writeErrorToJson();
 
-            if (LogLevel::isValidLevel($logRecord->getLevel())) {
-                if ($this->configuration['email' . $this->keyPostFix]['addresses']) {
+            if (LogLevel::isValidLevel((int)$logRecord->getLevel())) {
+                if ($this->configuration['email']['addresses']) {
                     try {
-                        $mailMessage = new MailMessage();
-                        $mailMessage
-                            ->setSubject($this->getSubject($logRecord))
-                            ->setTo(MailUtility::parseAddresses($this->configuration['email' . $this->keyPostFix]['addresses']))
+                        /** @var MailMessage $email */
+                        $email = GeneralUtility::makeInstance(MailMessage::class);
+                        $email
+                            ->setTo(MailUtility::parseAddresses(
+                                $this->configuration['email']['addresses']
+                            ))
+                            ->subject($this->getSubject($logRecord))
                             ->setSender(MailUtility::getSystemFrom())
-                            ->setContentType('text/html')
-                            ->setBody($this->getBody($logRecord));
-                        $mailer = new Mailer();
-                        $mailer->send($mailMessage);
-                    } catch (\Exception $exception) {
+                            ->html($this->getBody($logRecord));
 
+                        /** @var Mailer $mailer */
+                        $mailer = GeneralUtility::makeInstance(Mailer::class);
+                        $mailer->send($email);
+                    } catch (\Exception $exception) {
                     }
                 }
 
                 try {
-                    if ($this->configuration['slack' . $this->keyPostFix] && $this->configuration['slack' . $this->keyPostFix]['webHookUrl']) {
-                        $slackClient = new Client($this->configuration['slack' . $this->keyPostFix]['webHookUrl'], [
-                            'username' => $this->configuration['slack' . $this->keyPostFix]['username'] ?: 'Typo3 notification bot',
-                            'channel' => $this->configuration['slack' . $this->keyPostFix]['channel'],
+                    if ($this->configuration['slack'] && $this->configuration['slack']['webHookUrl']) {
+                        $slackClient = new Client($this->configuration['slack']['webHookUrl'], [
+                            'username' => $this->configuration['slack']['username'] ?: 'Typo3 notification bot',
+                            'channel' => $this->configuration['slack']['channel'],
                             'link_names' => true,
                         ]);
 
-                        /** Different get current link in Typo3 v8 */
-                        if ($this->keyPostFix) {
-                            $link = GeneralUtility::getIndpEnv('TYPO3_REQUEST_URL');
-                        } else {
-                            $link = $GLOBALS['TYPO3_REQUEST'] ? (string)$GLOBALS['TYPO3_REQUEST']->getUri() : '';
-                        }
-
+                        $link = $GLOBALS['TYPO3_REQUEST'] ? (string)$GLOBALS['TYPO3_REQUEST']->getUri() : '';
                         $slackClient
                             ->attach([
                                 'title' => $this->getSubject($logRecord),
@@ -101,7 +89,7 @@ class NotifierLogProcessor extends AbstractProcessor
                                 'fields' => [
                                     [
                                         'title' => 'Level',
-                                        'value' => LogLevel::getName($logRecord->getLevel()),
+                                        'value' => LogLevel::getName((int)$logRecord->getLevel()),
                                         'short' => true,
                                     ],
                                     [
@@ -116,17 +104,18 @@ class NotifierLogProcessor extends AbstractProcessor
                     }
                 } catch (\Exception $e) {
                     try {
-                        $mailMessage = new MailMessage();
-                        $mailMessage
+                        /** @var MailMessage $email */
+                        $email = GeneralUtility::makeInstance(MailMessage::class);
+                        $email
                             ->setSubject('Log notifier - slack error')
-                            ->setTo(MailUtility::parseAddresses($this->configuration['email' . $this->keyPostFix]['addresses']))
+                            ->setTo(MailUtility::parseAddresses($this->configuration['email']['addresses']))
                             ->setSender(MailUtility::getSystemFrom())
-                            ->setContentType('text/html')
                             ->setBody($e->getMessage());
-                        $mailer = new Mailer();
-                        $mailer->send($mailMessage);
-                    } catch (\Exception $exception) {
 
+                        /** @var Mailer $mailer */
+                        $mailer = GeneralUtility::makeInstance(Mailer::class);
+                        $mailer->send($email);
+                    } catch (\Exception $exception) {
                     }
                 }
             }
@@ -142,7 +131,7 @@ class NotifierLogProcessor extends AbstractProcessor
     {
         return \sprintf(
             "New %s occured on %s",
-            LogLevel::getName($logRecord->getLevel()),
+            LogLevel::getName((int)$logRecord->getLevel()),
             $GLOBALS['TYPO3_CONF_VARS']['SYS']['sitename']
         );
     }
@@ -156,10 +145,12 @@ class NotifierLogProcessor extends AbstractProcessor
         try {
             $view = GeneralUtility::makeInstance(StandaloneView::class);
             $view->setTemplatePathAndFilename(
-                GeneralUtility::getFileAbsFileName('EXT:dw_log_notifier/Resources/Private/Templates/Log/Processor/EmailProcessorTemplate.html')
+                GeneralUtility::getFileAbsFileName(
+                    'EXT:dw_log_notifier/Resources/Private/Templates/Log/Processor/EmailProcessorTemplate.html'
+                )
             );
             $view->assignMultiple([
-                'logLevelName' => LogLevel::getName($logRecord->getLevel()),
+                'logLevelName' => LogLevel::getName((int)$logRecord->getLevel()),
                 'siteName' => $GLOBALS['TYPO3_CONF_VARS']['SYS']['sitename'],
                 'logRecordDump' => DebuggerUtility::var_dump($logRecord, 'Log Record', 8, false, true, true),
                 'request' => $GLOBALS['TYPO3_REQUEST'],
@@ -180,38 +171,34 @@ class NotifierLogProcessor extends AbstractProcessor
      */
     public static function initialize()
     {
-        if (StringUtility::beginsWith(TYPO3_branch, '8')) {
-            $GLOBALS['TYPO3_CONF_VARS']['SYS']['debugExceptionHandler'] = DebugExceptionHandler::class;
-            $GLOBALS['TYPO3_CONF_VARS']['SYS']['productionExceptionHandler'] = ProductionExceptionHandler::class;
-            // @extensionScannerIgnoreLine
-            $dwLogNotifierConfiguration = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['dw_log_notifier']);
-            $typo3Context = (string)GeneralUtility::getApplicationContext();
-            self::setProcessor($dwLogNotifierConfiguration, $typo3Context, '.');
-        } else {
-            if (isset($GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['dw_log_notifier']) && is_array($GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['dw_log_notifier'])) {
-                $dwLogNotifierConfiguration = GeneralUtility::makeInstance(\TYPO3\CMS\Core\Configuration\ExtensionConfiguration::class)->get('dw_log_notifier');
-                $typo3Context = \TYPO3\CMS\Core\Core\Environment::getContext()->__toString();
-                self::setProcessor($dwLogNotifierConfiguration, $typo3Context, '');
-            }
+        if (isset($GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['dw_log_notifier']) &&
+            is_array($GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['dw_log_notifier'])) {
+            $dwLogNotifierConfiguration = GeneralUtility::makeInstance(
+                \TYPO3\CMS\Core\Configuration\ExtensionConfiguration::class
+            )->get('dw_log_notifier');
+            $typo3Context = \TYPO3\CMS\Core\Core\Environment::getContext()->__toString();
+            self::setProcessor($dwLogNotifierConfiguration, $typo3Context);
         }
     }
 
     /**
      * @param $dwLogNotifierConfiguration
      * @param $typo3Context
-     * @param $keyPostFix
      */
-    private static function setProcessor($dwLogNotifierConfiguration, $typo3Context, $keyPostFix) {
+    private static function setProcessor($dwLogNotifierConfiguration, $typo3Context)
+    {
         if ($dwLogNotifierConfiguration
-            && isset($dwLogNotifierConfiguration['errorLogReporting' . $keyPostFix])
-            && $dwLogNotifierConfiguration['errorLogReporting' . $keyPostFix]['enabled'] === '1'
-            && !in_array($typo3Context, explode(',', $dwLogNotifierConfiguration['errorLogReporting' . $keyPostFix]['disabledTypo3Context']))
+            && isset($dwLogNotifierConfiguration['errorLogReporting'])
+            && $dwLogNotifierConfiguration['errorLogReporting']['enabled'] === '1'
+            && !in_array(
+                $typo3Context,
+                explode(',', $dwLogNotifierConfiguration['errorLogReporting']['disabledTypo3Context'])
+            )
         ) {
             $GLOBALS['TYPO3_CONF_VARS']['LOG']['processorConfiguration'] = [
                 \TYPO3\CMS\Core\Log\LogLevel::ERROR => [
                     \Digitalwerk\DwLogNotifier\Log\Processor\NotifierLogProcessor::class => [
-                        'configuration' => $dwLogNotifierConfiguration['errorLogReporting' . $keyPostFix],
-                        'keyPostFix' => $keyPostFix,
+                        'configuration' => $dwLogNotifierConfiguration['errorLogReporting']
                     ]
                 ]
             ];
@@ -232,21 +219,5 @@ class NotifierLogProcessor extends AbstractProcessor
     public function setConfiguration(array $configuration): void
     {
         $this->configuration = $configuration;
-    }
-
-    /**
-     * @return string
-     */
-    public function getKeyPostFix(): string
-    {
-        return $this->keyPostFix;
-    }
-
-    /**
-     * @param string $keyPostFix
-     */
-    public function setKeyPostFix(string $keyPostFix): void
-    {
-        $this->keyPostFix = $keyPostFix;
     }
 }
