@@ -2,10 +2,7 @@
 namespace Digitalwerk\DwLogNotifier\Controller;
 
 use TYPO3\CMS\Backend\View\BackendTemplateView;
-use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Core\Utility\StringUtility;
-use TYPO3\CMS\Extbase\Annotation\Inject;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use TYPO3\CMS\Extbase\Mvc\View\ViewInterface;
 
@@ -43,30 +40,22 @@ class BackendController extends ActionController
      * @throws \TYPO3\CMS\Extbase\Persistence\Exception\IllegalObjectTypeException
      * @throws \TYPO3\CMS\Extbase\Persistence\Exception\UnknownObjectException
      */
-	function indexAction()
-	{
-	    $keyPostFix = '';
-        if (StringUtility::beginsWith(TYPO3_branch, '8')) {
-            // @extensionScannerIgnoreLine
-            $dwLogNotifierConfiguration = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['dw_log_notifier']);
-            $keyPostFix = '.';
-        } else {
-            if (
-                isset($GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['dw_log_notifier'])
-                && is_array($GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['dw_log_notifier'])
-            ) {
-                $dwLogNotifierConfiguration =
-                    GeneralUtility::makeInstance(\TYPO3\CMS\Core\Configuration\ExtensionConfiguration::class)
-                        ->get('dw_log_notifier');
-            }
+    public function indexAction()
+    {
+        if (isset($GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['dw_log_notifier'])
+            && is_array($GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['dw_log_notifier'])
+        ) {
+            $dwLogNotifierConfiguration =
+                GeneralUtility::makeInstance(\TYPO3\CMS\Core\Configuration\ExtensionConfiguration::class)
+                    ->get('dw_log_notifier');
+            $dwLogNotifierConfiguration = $dwLogNotifierConfiguration['errorLogReporting'];
+            $this->view->assignMultiple([
+                'enable' => $dwLogNotifierConfiguration['enabled'],
+                'emails' => $dwLogNotifierConfiguration['email']['addresses'],
+                'omitExceptions' => $dwLogNotifierConfiguration['omitExceptions'],
+                'disabledContext' => $dwLogNotifierConfiguration['disabledTypo3Context'],
+                'slack' => $dwLogNotifierConfiguration['slack'],
+            ]);
         }
-        $dwLogNotifierConfiguration = $dwLogNotifierConfiguration['errorLogReporting' . $keyPostFix];
-        $this->view->assignMultiple([
-			'enable' => $dwLogNotifierConfiguration['enabled' . $keyPostFix],
-			'emails' => $dwLogNotifierConfiguration['email' . $keyPostFix]['addresses' . $keyPostFix],
-			'omitExceptions' => $dwLogNotifierConfiguration['omitExceptions' . $keyPostFix],
-			'disabledContext' => $dwLogNotifierConfiguration['disabledTypo3Context' . $keyPostFix],
-			'slack' => $dwLogNotifierConfiguration['slack' . $keyPostFix],
-		]);
-	}
+    }
 }

@@ -10,7 +10,9 @@
   <h1 class="text-center" style="margin-top:0;">
     Digitalwerk Log Notifier
     <br/>
-    <f:image src="EXT:dw_log_notifier/Resources/Public/Icons/Extension.svg" width="30" height="30" style="vertical-align: middle; margin-right: 15px;"/>
+    <f:image src="EXT:dw_log_notifier/Resources/Public/Icons/Extension.svg"
+             width="30"
+             height="30" style="vertical-align: middle; margin-right: 15px;"/>
   </h1>
 
   <div class="container">
@@ -50,25 +52,25 @@
         <div class="panel-body">
           <span class="glyphicon glyphicon-scale" aria-hidden="true"></span>
           Slack info:
-            <div class="row text-center">
-              <div class="col-md-12">
-                <strong class="text-{f:if(condition: slack.webHookUrl, then: 'info', else: 'danger')}">
-                  Slack WebHookUrl : {slack.webHookUrl}
-                </strong>
-              </div>
-              <div class="col-md-12">
-                <strong class="text-{f:if(condition: slack.channel, then: 'info', else: 'danger')}">
-                  Slack Channel : {slack.channel}
-                </strong>
-              </div>
-              <div class="col-md-12">
-                <strong class="text-{f:if(condition: slack.username, then: 'info', else: 'danger')}">
-                  Slack Username : {slack.username}
-                </strong>
-              </div>
+          <div class="row text-center">
+            <div class="col-md-12">
+              <strong class="text-{f:if(condition: slack.webHookUrl, then: 'info', else: 'danger')}">
+                Slack WebHookUrl : {slack.webHookUrl}
+              </strong>
+            </div>
+            <div class="col-md-12">
+              <strong class="text-{f:if(condition: slack.channel, then: 'info', else: 'danger')}">
+                Slack Channel : {slack.channel}
+              </strong>
+            </div>
+            <div class="col-md-12">
+              <strong class="text-{f:if(condition: slack.username, then: 'info', else: 'danger')}">
+                Slack Username : {slack.username}
+              </strong>
             </div>
           </div>
         </div>
+      </div>
       <f:render section="Panel"
                 arguments="{name:'Disabled Typo3 Context:',propertyValue:disabledContext}"/>
     </f:if>
